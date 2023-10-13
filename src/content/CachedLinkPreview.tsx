@@ -37,7 +37,7 @@ const CachedLinkPreview = ({ url }: CachedLinkPreviewProps): JSX.Element => {
         }
         return previewCache[url];
       }}
-      width="400px"
+      // width="400px"
     />
   );
 };

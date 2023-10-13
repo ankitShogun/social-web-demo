@@ -62,7 +62,7 @@ const Feed = ({
   return (
     <div className={styles.root}>
       <div className={styles.header}>
-        <nav className={styles.navigation}>
+        {/* <nav className={styles.navigation}>
           {user &&
             [FeedTypes.DISPLAY_ID_POSTS, FeedTypes.MY_POSTS].includes(
               feedType,
@@ -100,7 +100,7 @@ const Feed = ({
           >
             My Posts
           </div>
-        </nav>
+        </nav> */}
         <Button
           className={styles.newPostButton}
           onClick={() => setIsModalOpen(true)}
