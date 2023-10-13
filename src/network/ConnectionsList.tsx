@@ -45,7 +45,6 @@ const ConnectionsList = ({
                 profile: profile,
               };
             } catch (e) {
-              console.error(e);
               return {
                 handle: displayHandle || "",
                 dsnpId: fromId,

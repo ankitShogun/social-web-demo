@@ -104,13 +104,13 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
           )}
           {extensionConnected && providerInfo && (
             <>
-              <Col span={12}>
+              <Col>
                 <Login
                   onLogin={(account) => onLogin(account, providerInfo)}
                   handlesMap={handlesMap}
                 />
               </Col>
-              <Col span={12}>
+              <Col>
                 <CreateIdentity
                   onLogin={onLogin}
                   providerInfo={providerInfo}

@@ -99,10 +99,10 @@ const App = (): JSX.Element => {
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: "#4473ec",
+          colorPrimary: "#f37a21",
           colorSuccess: "#29fd47",
           colorWarning: "#ff7f0e",
-          colorInfo: "#4473ec",
+          colorInfo: "#f37a21",
         },
       }}
     >

@@ -15,7 +15,7 @@ const Header = ({ account, logout }: HeaderProps): JSX.Element => {
   return (
     <div className={styles.root}>
       <Title level={1} className={styles.title}>
-        Social Web Demo
+        DSNP Social
       </Title>
       {account && logout && (
         <Popover

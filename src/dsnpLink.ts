@@ -184,7 +184,10 @@ export function createContext<FetcherData>(
   params?: r.CreateContextParams<AuthMethods, FetcherData>,
 ): r.Context<AuthMethods, FetcherData> {
   return new r.Context<AuthMethods, FetcherData>({
-    serverConfiguration: new r.ServerConfiguration("http://localhost:5005", {}),
+    serverConfiguration: new r.ServerConfiguration(
+      "https://api.dsnp-social-web.becknprotocol.io",
+      {},
+    ),
     authMethods: configureAuth(params?.authProviders),
     ...params,
   });
