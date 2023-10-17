@@ -9,6 +9,21 @@ interface CachedLinkPreviewProps {
 const CachedLinkPreview = ({ url }: CachedLinkPreviewProps): JSX.Element => {
   const fetchPreview = async (url: string) => {
     const ctx = getContext();
+    let newUrl = new URL(url);
+    if (newUrl.searchParams.get("becknified")) {
+      let productName = newUrl.searchParams.get("productName");
+      let productImage = newUrl.searchParams.get("productImage");
+      let productDesc = newUrl.searchParams.get("productDesc");
+      console.log("Dank", productName, productImage, productDesc);
+
+      return {
+        title: productName,
+        description: productDesc,
+        image: productImage,
+        siteName: "",
+        hostname: "",
+      };
+    }
     const req = await ctx.createRequest({
       path: "/preview?url=" + url,
       params: {},
@@ -17,6 +32,7 @@ const CachedLinkPreview = ({ url }: CachedLinkPreviewProps): JSX.Element => {
     });
     const res = await ctx.sendRequest(req);
     const json = await res.body.json();
+
     return {
       title: json.title || "",
       description: json.description || "",
