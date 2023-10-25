@@ -14,7 +14,6 @@ const CachedLinkPreview = ({ url }: CachedLinkPreviewProps): JSX.Element => {
       let productName = newUrl.searchParams.get("productName");
       let productImage = newUrl.searchParams.get("productImage");
       let productDesc = newUrl.searchParams.get("productDesc");
-      console.log("Dank", productName, productImage, productDesc);
 
       return {
         title: productName,

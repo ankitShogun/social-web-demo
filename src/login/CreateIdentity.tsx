@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Button, Input, Select, Spin, Form } from "antd";
 import Title from "antd/es/typography/Title";
+import { parentURLs } from "../helpers/constants";
 
 import * as dsnpLink from "../dsnpLink";
 import { HandlesMap, UserAccount } from "../types";
@@ -40,6 +41,88 @@ const CreateIdentity = ({
     setHandle(event.target.value);
   };
 
+  const handleCreateIdentityInsideIframe = async (
+    handleSignature: string,
+    addProviderSignature: string,
+    handle: string,
+    signingAccount: any,
+  ) => {
+    setIsLoading(true);
+    // TODO: Validation
+    if (handle && signingAccount) {
+      try {
+        // Get the current block number
+        const blockNumber = await getBlockNumber(providerInfo.nodeUrl);
+        const expiration = blockNumber + 50;
+        // Generate the Handle Signature
+
+        // Create identity
+        const { expires, accessToken } = await dsnpLink.authCreate(
+          getContext(),
+          {},
+          {
+            algo: "SR25519",
+            encoding: "hex",
+            expiration,
+            baseHandle: handle,
+            publicKey: signingAccount.account.address,
+            addProviderSignature,
+            handleSignature,
+          },
+        );
+
+        setAccessToken(accessToken, expires);
+        const dsnpLinkCtx = getContext();
+
+        // We have to poll for the account creation
+        let accountResp: dsnpLink.AuthAccountResponse | null = null;
+        const getDsnpAndHandle = async (
+          timeout: number,
+        ): Promise<null | dsnpLink.AuthAccountResponse> =>
+          new Promise((resolve) => {
+            setTimeout(async () => {
+              const resp = await dsnpLink.authAccount(dsnpLinkCtx, {});
+              // Handle the 202 response
+              if (resp.size === 0) {
+                resolve(null);
+              } else {
+                resolve(resp);
+              }
+            }, timeout);
+          });
+        accountResp = await getDsnpAndHandle(0);
+        let tries = 1;
+        while (accountResp === null && tries < 10) {
+          console.log(
+            "Waiting another 3 seconds before getting the account again...",
+          );
+          accountResp = await getDsnpAndHandle(3_000);
+          tries++;
+        }
+        if (accountResp === null) {
+          throw new Error("Account Creation timed out");
+        }
+
+        onLogin(
+          {
+            address: selectedAccount,
+            handle: accountResp.displayHandle || "Anonymous",
+            expires,
+            accessToken,
+            dsnpId: accountResp.dsnpId,
+          },
+          providerInfo,
+        );
+      } catch (e) {
+        console.error(e);
+        setIsLoading(false);
+      }
+    } else {
+      // Handle errors
+      setIsLoading(false);
+    }
+  };
+
   const handleCreateIdentity = async () => {
     setIsLoading(true);
     // TODO: Validation
@@ -51,6 +134,28 @@ const CreateIdentity = ({
         const expiration = blockNumber + 50;
         // Generate the Handle Signature
         const handlePayload = payloadHandle(expiration, handle);
+
+        if (window.location !== window.parent.location) {
+          const payloadData = {
+            handlePayload: handlePayload.toU8a(),
+            expiration,
+            accountAddress: signingAccount.account.address,
+            providerId: providerInfo.providerId,
+            providerSchemas: providerInfo.schemas,
+            handle,
+            signingAccount,
+          };
+          window.parent.postMessage(
+            {
+              type: "signCiTransaction",
+              data: payloadData,
+            },
+            "*",
+          );
+          setIsLoading(false);
+          return;
+        }
+
         const handleSignature = await signPayloadWithExtension(
           signingAccount.account.address,
           handlePayload.toU8a(),
@@ -139,6 +244,28 @@ const CreateIdentity = ({
       setIsLoading(false);
     }
   };
+
+  React.useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (!parentURLs.includes(event.origin)) return;
+      if (event.data.type && event.data.type === "signCiTransaction") {
+        let { handleSignature, addProviderSignature, handle, signingAccount } =
+          event.data.data;
+        handleCreateIdentityInsideIframe(
+          handleSignature,
+          addProviderSignature,
+          handle,
+          signingAccount,
+        );
+      }
+    }
+    //@ts-ignore
+    window.addEventListener("message", handleMessage);
+    return () => {
+      //@ts-ignore
+      window.removeEventListener("message", handleMessage);
+    };
+  }, []);
 
   return (
     <div className={styles.root}>

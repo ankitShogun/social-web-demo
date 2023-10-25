@@ -8,6 +8,7 @@ import CreateIdentity from "./CreateIdentity";
 import Login from "./Login";
 import { HandlesMap, UserAccount } from "../types";
 import styles from "./LoginScreen.module.css";
+import { parentURLs } from "../helpers/constants";
 
 const dsnpLinkCtx = dsnpLink.createContext();
 
@@ -44,6 +45,18 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
   const [providerInfo, setProviderInfo] = useState<dsnpLink.ProviderResponse>();
   const [handlesMap, setHandlesMap] = useState<HandlesMap>(new Map());
 
+  const setAuthState = async (allAccounts: InjectedAccountWithMeta[]) => {
+    const accountsWithHandles = await dsnpLink.authHandles(
+      dsnpLinkCtx,
+      {},
+      allAccounts.map((account) => account.address),
+    );
+
+    setHandlesMap(toHandlesMap(allAccounts, accountsWithHandles));
+    setExtensionConnected(true);
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     const getProviderInfo = async () => {
       const fetched = await dsnpLink.authProvider(dsnpLinkCtx, {});
@@ -53,25 +66,48 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
     getProviderInfo();
   }, [setProviderInfo, setIsLoading]);
 
+  React.useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (!parentURLs.includes(event.origin)) return;
+      if (event.data.type && event.data.type === "polkaAccounts") {
+        setAuthState(event.data.data);
+      }
+    }
+
+    //@ts-ignore
+    window.addEventListener("message", handleMessage);
+
+    return () => {
+      //@ts-ignore
+      window.removeEventListener("message", handleMessage);
+    };
+  }, []);
+
   const connectExtension = async () => {
     try {
       setIsLoading(true);
-      const enabled = await web3Enable("Social Web Example Client");
-      setHasWalletExtension(true);
-      if (enabled.length > 0) {
-        const allAccounts = await web3Accounts();
-        // Check each account for a handle.
-        const accountsWithHandles = await dsnpLink.authHandles(
-          dsnpLinkCtx,
-          {},
-          allAccounts.map((account) => account.address),
-        );
-
-        setHandlesMap(toHandlesMap(allAccounts, accountsWithHandles));
-        setExtensionConnected(true);
+      // If the app is running inside an iframe
+      if (window.location !== window.parent.location) {
+        window.parent.postMessage({ type: "enablePolka" }, "*");
         setIsLoading(false);
       } else {
-        setIsLoading(false);
+        const enabled = await web3Enable("Social Web Example Client");
+        setHasWalletExtension(true);
+        if (enabled.length > 0) {
+          const allAccounts = await web3Accounts();
+          // Check each account for a handle.
+          const accountsWithHandles = await dsnpLink.authHandles(
+            dsnpLinkCtx,
+            {},
+            allAccounts.map((account) => account.address),
+          );
+
+          setHandlesMap(toHandlesMap(allAccounts, accountsWithHandles));
+          setExtensionConnected(true);
+          setIsLoading(false);
+        } else {
+          setIsLoading(false);
+        }
       }
     } catch (e) {
       setHasWalletExtension("web3" in window);
