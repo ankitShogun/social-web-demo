@@ -9,6 +9,7 @@ import Login from "./Login";
 import { HandlesMap, UserAccount } from "../types";
 import styles from "./LoginScreen.module.css";
 import { parentURLs } from "../helpers/constants";
+import { isElement } from "react-dom/test-utils";
 
 const dsnpLinkCtx = dsnpLink.createContext();
 
@@ -83,6 +84,12 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
     };
   }, []);
 
+  React.useEffect(() => {
+    if (extensionConnected && handlesMap.size === 0) {
+      location.reload();
+    }
+  }, [extensionConnected, handlesMap]);
+
   const connectExtension = async () => {
     try {
       setIsLoading(true);
@@ -101,8 +108,10 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
             {},
             allAccounts.map((account) => account.address),
           );
+          let localHandlesMap = toHandlesMap(allAccounts, accountsWithHandles);
+          console.log("Dank inside", localHandlesMap);
 
-          setHandlesMap(toHandlesMap(allAccounts, accountsWithHandles));
+          setHandlesMap(localHandlesMap);
           setExtensionConnected(true);
           setIsLoading(false);
         } else {
